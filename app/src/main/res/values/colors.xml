@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="kino_purple">#6C4AB6</color>
+    <color name="kino_purple_dark">#241B3A</color>
+    <color name="kino_lilac">#B39DDB</color>
+    <color name="kino_amber">#FFC857</color>
+    <color name="kino_bg">#121018</color>
+    <color name="kino_surface">#1D1926</color>
+    <color name="kino_on_surface">#F2EFFA</color>
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+</resources>

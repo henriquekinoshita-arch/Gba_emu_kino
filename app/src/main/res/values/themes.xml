@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.KinoGBA" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@color/kino_bg</item>
+        <item name="android:navigationBarColor">@color/kino_bg</item>
+        <item name="android:windowBackground">@color/kino_bg</item>
+    </style>
+
+    <style name="Theme.KinoGBA.Game" parent="Theme.KinoGBA">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="27">shortEdges</item>
+    </style>
+</resources>

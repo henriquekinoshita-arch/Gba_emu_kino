@@ -1,0 +1,17 @@
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+*.apk
+*.aab
+
+# Local ROMs must never be committed (copyright)
+*.gba
+*.gbc
+*.gb
+*.zip
