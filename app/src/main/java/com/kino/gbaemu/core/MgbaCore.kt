@@ -78,6 +78,8 @@ class MgbaCore {
         if (isCreated) nativeUnpause(handle)
     }
 
+    fun isPaused(): Boolean = isCreated && nativeIsPaused(handle)
+
     fun reset() {
         if (isCreated) nativeReset(handle)
     }
@@ -125,6 +127,7 @@ class MgbaCore {
     private external fun nativeDestroy(handle: Long)
     private external fun nativePause(handle: Long)
     private external fun nativeUnpause(handle: Long)
+    private external fun nativeIsPaused(handle: Long): Boolean
     private external fun nativeReset(handle: Long)
     private external fun nativeSetRewinding(handle: Long, rewinding: Boolean)
     private external fun nativeSetKey(handle: Long, keyIndex: Int, pressed: Boolean)

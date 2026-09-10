@@ -90,10 +90,24 @@ class EmulatorEngine {
 
     fun loadStateBytes(data: ByteArray): Boolean = core.loadStateBytes(data)
 
+    /**
+     * The first touch of mGBA's cheat device lazily creates and attaches it
+     * to the ARM core, mutating state the CPU thread also reads while it
+     * runs. That's only safe while the thread is paused - which on a fresh
+     * [start] it isn't yet, since starting the thread is what makes it run
+     * in the first place. Pausing/unpausing here (and restoring whatever
+     * pause state the caller already had) makes this safe to call right
+     * after [start] and at any point during gameplay alike.
+     */
     fun replaceCheats(cheats: List<Pair<String, String>>) {
+        val wasPaused = core.isPaused()
+        core.pause()
         core.cheatsClear()
         for ((name, code) in cheats) {
             core.cheatsAdd(name, code)
+        }
+        if (!wasPaused) {
+            core.unpause()
         }
     }
 

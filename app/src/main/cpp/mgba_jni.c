@@ -249,6 +249,17 @@ Java_com_kino_gbaemu_core_MgbaCore_nativePause(JNIEnv *env, jobject thiz, jlong 
     }
 }
 
+JNIEXPORT jboolean JNICALL
+Java_com_kino_gbaemu_core_MgbaCore_nativeIsPaused(JNIEnv *env, jobject thiz, jlong handle) {
+    (void) env;
+    (void) thiz;
+    EmuContext *ctx = (EmuContext *) (intptr_t) handle;
+    if (!ctx || !ctx->threadStarted) {
+        return JNI_FALSE;
+    }
+    return mCoreThreadIsPaused(&ctx->thread) ? JNI_TRUE : JNI_FALSE;
+}
+
 JNIEXPORT void JNICALL
 Java_com_kino_gbaemu_core_MgbaCore_nativeUnpause(JNIEnv *env, jobject thiz, jlong handle) {
     (void) env;
@@ -410,6 +421,12 @@ Java_com_kino_gbaemu_core_MgbaCore_nativeLoadStateBytes(JNIEnv *env, jobject thi
     return ok;
 }
 
+// The first call to core->cheatDevice() lazily creates the cheat device and
+// attaches it to the ARM core (mutating core->cpu->components[] and calling
+// ARMHotplugAttach). If the mCoreThread is running concurrently at that
+// moment, this races with the CPU thread's own use of that same array -
+// callers on the Kotlin side MUST pause the thread (EmulatorEngine already
+// does this in replaceCheats()) before calling nativeCheatsClear/Add.
 JNIEXPORT void JNICALL
 Java_com_kino_gbaemu_core_MgbaCore_nativeCheatsClear(JNIEnv *env, jobject thiz, jlong handle) {
     (void) env;
