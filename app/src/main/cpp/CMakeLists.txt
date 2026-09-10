@@ -41,10 +41,20 @@ set_target_properties(kinogba PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON)
 
 # mGBA's own CMakeLists.txt applies feature defines like ENABLE_VFS to the
 # "mgba" target via COMPILE_DEFINITIONS (not PUBLIC/INTERFACE), so they are
-# not exported to consumers via target_link_libraries. mgba_jni.c needs
-# ENABLE_VFS itself to see VFileOpen()'s declaration in mgba-util/vfs.h.
-# This is a preprocessor-visibility define only; it does not change any
-# struct layout mgba.a was actually compiled with (that would additionally
-# require ENABLE_DIRECTORIES, which this build never defines), so no ABI
-# mismatch is introduced between mgba_jni.c and the prebuilt mgba objects.
-target_compile_definitions(kinogba PRIVATE ENABLE_VFS)
+# not exported to consumers via target_link_libraries. mgba_jni.c must
+# replicate the exact same defines mgba.a was actually compiled with, or
+# every conditionally-compiled member of "struct mCore" after the first
+# mismatch shifts to the wrong offset - a real ABI mismatch, not just a
+# missing-declaration warning.
+#
+# Confirmed against mGBA's own CMakeLists.txt (see the "ENABLES" list built
+# around `if(ENABLE_VFS: list(APPEND ENABLES VFS DIRECTORIES))`): turning on
+# ENABLE_VFS (which this build always does) *always* also turns on
+# ENABLE_DIRECTORIES as a paired feature. Missing that here was a real bug -
+# it segfaulted immediately on core->init() on a real device because the
+# struct mCore layout mgba.a used and the one mgba_jni.c assumed disagreed
+# on whether the "dirs" member (gated on ENABLE_VFS && ENABLE_DIRECTORIES)
+# exists, shifting every field after it. Reproduced and confirmed fixed with
+# a host (non-Android) build of libmgba.a plus a small harness that calls
+# GBACoreCreate()/init()/loadROM() the same way mgba_jni.c does.
+target_compile_definitions(kinogba PRIVATE ENABLE_VFS ENABLE_DIRECTORIES)

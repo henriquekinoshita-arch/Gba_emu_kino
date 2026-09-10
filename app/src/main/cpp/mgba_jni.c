@@ -18,14 +18,21 @@
 //    are pushed into a lock-free ring buffer that a Kotlin AudioTrack
 //    thread drains.
 //  - Save-state (de)serialization is exposed as raw byte blobs; the Kotlin
-//    layer owns slot files, thumbnails and naming (mGBA's own slot/directory
-//    helpers require ENABLE_DIRECTORIES, which this minimal Android build
-//    does not enable).
+//    layer owns slot files, thumbnails and naming directly via explicit
+//    VFileOpen() paths, rather than mGBA's own directory-based slot helpers
+//    (mCoreSaveState/mCoreAutoloadSave and friends), which need a configured
+//    mDirectorySet we never set up.
+//  - ENABLE_DIRECTORIES must still be defined here (see CMakeLists.txt) even
+//    though we never call those directory helpers: mGBA's build always
+//    turns it on together with ENABLE_VFS, which changes struct mCore's
+//    layout (an extra "dirs" member). Compiling this file without it is a
+//    real ABI mismatch with the actual mgba.a, not just a missing symbol.
 
 #include <jni.h>
 
 #include <android/log.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
