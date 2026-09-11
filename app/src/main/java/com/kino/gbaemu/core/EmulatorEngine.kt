@@ -36,8 +36,8 @@ class EmulatorEngine {
     private var audioThread: AudioThread? = null
     private val running = AtomicBoolean(false)
 
-    fun start(romPath: String, savePath: String): RomLoadResult {
-        if (!core.create()) {
+    fun start(romPath: String, savePath: String, crashLogPath: String? = null): RomLoadResult {
+        if (!core.create(crashLogPath)) {
             return RomLoadResult.CORE_NOT_READY
         }
         val result = core.loadRom(romPath, savePath)

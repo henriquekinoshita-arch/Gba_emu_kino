@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
 
     private val libraryViewModel: LibraryViewModel by viewModels {
         viewModelFactory {
-            initializer { LibraryViewModel(app.libraryRepository) }
+            initializer { LibraryViewModel(app.applicationContext, app.libraryRepository) }
         }
     }
 

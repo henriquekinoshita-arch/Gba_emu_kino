@@ -42,9 +42,18 @@ class MgbaCore {
 
     val isCreated: Boolean get() = handle != 0L
 
-    fun create(): Boolean {
+    /**
+     * @param crashLogPath when non-null, the native side appends a plain-text
+     * breadcrumb line before/after each risky step (core init, ROM load,
+     * thread start, cheat device access). A native crash (SIGSEGV/abort)
+     * kills the process before any Java exception handler or logcat access
+     * could help, so this file - readable by the app itself, no adb needed -
+     * is what lets [com.kino.gbaemu.data.CrashLog] show the last thing that
+     * happened right before such a crash.
+     */
+    fun create(crashLogPath: String? = null): Boolean {
         if (isCreated) return true
-        handle = nativeCreate(videoBuffer)
+        handle = nativeCreate(videoBuffer, crashLogPath)
         return isCreated
     }
 
@@ -120,7 +129,7 @@ class MgbaCore {
 
     fun cheatsAdd(name: String, code: String): Boolean = isCreated && nativeCheatsAdd(handle, name, code)
 
-    private external fun nativeCreate(videoBuffer: ByteBuffer): Long
+    private external fun nativeCreate(videoBuffer: ByteBuffer, crashLogPath: String?): Long
     private external fun nativeLoadRom(handle: Long, romPath: String, savePath: String): Int
     private external fun nativeStart(handle: Long): Boolean
     private external fun nativeStop(handle: Long)

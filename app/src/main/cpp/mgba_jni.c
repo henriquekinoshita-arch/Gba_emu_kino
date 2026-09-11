@@ -36,6 +36,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 #include <mgba/core/cheats.h>
 #include <mgba/core/config.h>
@@ -66,6 +68,7 @@ typedef struct {
     RingBuffer audioRing;
     jobject videoBufferRef;
     int threadStarted;
+    char *logPath;
 } EmuContext;
 
 // mAVStream callback: invoked from the emulation thread once per output
@@ -75,47 +78,92 @@ static void onPostAudioFrame(struct mAVStream *stream, int16_t left, int16_t rig
     ring_buffer_push(&ctx->audioRing, left, right);
 }
 
+// A native crash (SIGSEGV/abort) kills the process instantly, before any
+// Java exception handler or logcat buffer can be inspected by someone
+// without adb access to the device. This writes a plain-text breadcrumb
+// trail to a file the app itself can read back and show/share from its own
+// UI, using raw write()+fsync() (not buffered stdio) so the last line
+// written is durable even if the very next native call segfaults.
+static void logBreadcrumb(EmuContext *ctx, const char *msg) {
+    if (!ctx || !ctx->logPath) {
+        return;
+    }
+    int fd = open(ctx->logPath, O_WRONLY | O_CREAT | O_APPEND, 0644);
+    if (fd < 0) {
+        return;
+    }
+    time_t now = time(NULL);
+    char line[320];
+    int len = snprintf(line, sizeof(line), "[%ld] %s\n", (long) now, msg);
+    if (len > 0) {
+        write(fd, line, (size_t) (len < (int) sizeof(line) ? len : (int) sizeof(line) - 1));
+    }
+    fsync(fd);
+    close(fd);
+}
+
 JNIEXPORT jlong JNICALL
-Java_com_kino_gbaemu_core_MgbaCore_nativeCreate(JNIEnv *env, jobject thiz, jobject videoBuffer) {
+Java_com_kino_gbaemu_core_MgbaCore_nativeCreate(JNIEnv *env, jobject thiz, jobject videoBuffer, jstring logPath) {
     (void) thiz;
+
+    // The EmuContext (and therefore ctx->logPath) doesn't exist yet, so the
+    // very first breadcrumbs are written through a temporary path pulled
+    // straight from the jstring argument.
+    const char *logPathC = logPath ? (*env)->GetStringUTFChars(env, logPath, NULL) : NULL;
 
     void *videoPtr = (*env)->GetDirectBufferAddress(env, videoBuffer);
     jlong videoCapacity = (*env)->GetDirectBufferCapacity(env, videoBuffer);
     if (!videoPtr || videoCapacity < (jlong) (GBA_WIDTH * GBA_HEIGHT * 4)) {
         LOGE("Video buffer must be a direct ByteBuffer of at least %d bytes", GBA_WIDTH * GBA_HEIGHT * 4);
+        if (logPathC) (*env)->ReleaseStringUTFChars(env, logPath, logPathC);
         return 0;
     }
 
     EmuContext *ctx = calloc(1, sizeof(EmuContext));
     if (!ctx) {
+        if (logPathC) (*env)->ReleaseStringUTFChars(env, logPath, logPathC);
         return 0;
     }
+    ctx->logPath = logPathC ? strdup(logPathC) : NULL;
+    if (logPathC) (*env)->ReleaseStringUTFChars(env, logPath, logPathC);
+
+    logBreadcrumb(ctx, "nativeCreate: begin");
 
     ctx->core = GBACoreCreate();
     if (!ctx->core) {
         LOGE("GBACoreCreate failed");
+        logBreadcrumb(ctx, "nativeCreate: GBACoreCreate FAILED");
+        free(ctx->logPath);
         free(ctx);
         return 0;
     }
+    logBreadcrumb(ctx, "nativeCreate: GBACoreCreate ok");
 
     mCoreInitConfig(ctx->core, "kinogba");
+    logBreadcrumb(ctx, "nativeCreate: mCoreInitConfig ok");
 
     if (!ctx->core->init(ctx->core)) {
         LOGE("core->init failed");
+        logBreadcrumb(ctx, "nativeCreate: core->init FAILED");
         ctx->core->deinit(ctx->core);
+        free(ctx->logPath);
         free(ctx);
         return 0;
     }
+    logBreadcrumb(ctx, "nativeCreate: core->init ok");
 
     if (!ring_buffer_init(&ctx->audioRing, AUDIO_RING_CAPACITY_FRAMES)) {
         LOGE("Failed to allocate audio ring buffer");
+        logBreadcrumb(ctx, "nativeCreate: ring_buffer_init FAILED");
         ctx->core->deinit(ctx->core);
+        free(ctx->logPath);
         free(ctx);
         return 0;
     }
 
     ctx->videoBufferRef = (*env)->NewGlobalRef(env, videoBuffer);
     ctx->core->setVideoBuffer(ctx->core, (mColor *) videoPtr, GBA_WIDTH);
+    logBreadcrumb(ctx, "nativeCreate: setVideoBuffer ok");
 
     ctx->avStream.videoDimensionsChanged = NULL;
     ctx->avStream.audioRateChanged = NULL;
@@ -136,6 +184,7 @@ Java_com_kino_gbaemu_core_MgbaCore_nativeCreate(JNIEnv *env, jobject thiz, jobje
     ctx->core->opts.useBios = false; // use mGBA's built-in HLE BIOS; no BIOS dump required
     ctx->core->opts.skipBios = true;
 
+    logBreadcrumb(ctx, "nativeCreate: done");
     return (jlong) (intptr_t) ctx;
 }
 
@@ -147,20 +196,26 @@ Java_com_kino_gbaemu_core_MgbaCore_nativeLoadRom(JNIEnv *env, jobject thiz, jlon
         return 3;
     }
 
+    logBreadcrumb(ctx, "nativeLoadRom: begin");
+
     const char *romPathC = (*env)->GetStringUTFChars(env, romPath, NULL);
     struct VFile *romVf = VFileOpen(romPathC, O_RDONLY);
     (*env)->ReleaseStringUTFChars(env, romPath, romPathC);
 
     if (!romVf) {
         LOGE("Could not open ROM file");
+        logBreadcrumb(ctx, "nativeLoadRom: VFileOpen(rom) FAILED");
         return 1;
     }
+    logBreadcrumb(ctx, "nativeLoadRom: VFileOpen(rom) ok");
 
     if (!ctx->core->loadROM(ctx->core, romVf)) {
         LOGE("core->loadROM rejected the ROM file");
+        logBreadcrumb(ctx, "nativeLoadRom: core->loadROM FAILED");
         romVf->close(romVf);
         return 2;
     }
+    logBreadcrumb(ctx, "nativeLoadRom: core->loadROM ok");
 
     const char *savePathC = (*env)->GetStringUTFChars(env, savePath, NULL);
     struct VFile *saveVf = VFileOpen(savePathC, O_RDWR | O_CREAT);
@@ -168,10 +223,13 @@ Java_com_kino_gbaemu_core_MgbaCore_nativeLoadRom(JNIEnv *env, jobject thiz, jlon
 
     if (saveVf) {
         ctx->core->loadSave(ctx->core, saveVf);
+        logBreadcrumb(ctx, "nativeLoadRom: loadSave ok");
     } else {
         LOGW("Could not open/create save file; progress will not persist");
+        logBreadcrumb(ctx, "nativeLoadRom: VFileOpen(save) FAILED (non-fatal)");
     }
 
+    logBreadcrumb(ctx, "nativeLoadRom: done");
     return 0;
 }
 
@@ -184,15 +242,18 @@ Java_com_kino_gbaemu_core_MgbaCore_nativeStart(JNIEnv *env, jobject thiz, jlong 
         return JNI_FALSE;
     }
 
+    logBreadcrumb(ctx, "nativeStart: begin");
     memset(&ctx->thread, 0, sizeof(ctx->thread));
     ctx->thread.core = ctx->core;
 
     if (!mCoreThreadStart(&ctx->thread)) {
         LOGE("mCoreThreadStart failed");
+        logBreadcrumb(ctx, "nativeStart: mCoreThreadStart FAILED");
         return JNI_FALSE;
     }
 
     ctx->threadStarted = 1;
+    logBreadcrumb(ctx, "nativeStart: mCoreThreadStart ok, CPU thread running");
     return JNI_TRUE;
 }
 
@@ -236,6 +297,7 @@ Java_com_kino_gbaemu_core_MgbaCore_nativeDestroy(JNIEnv *env, jobject thiz, jlon
         (*env)->DeleteGlobalRef(env, ctx->videoBufferRef);
     }
 
+    free(ctx->logPath);
     free(ctx);
 }
 
@@ -435,10 +497,13 @@ Java_com_kino_gbaemu_core_MgbaCore_nativeCheatsClear(JNIEnv *env, jobject thiz, 
     if (!ctx || !ctx->core) {
         return;
     }
+    logBreadcrumb(ctx, "nativeCheatsClear: begin (core->cheatDevice may lazily attach it)");
     struct mCheatDevice *device = ctx->core->cheatDevice(ctx->core);
+    logBreadcrumb(ctx, "nativeCheatsClear: cheatDevice() returned");
     if (device) {
         mCheatDeviceClear(device);
     }
+    logBreadcrumb(ctx, "nativeCheatsClear: done");
 }
 
 JNIEXPORT jboolean JNICALL

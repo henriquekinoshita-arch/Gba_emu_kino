@@ -1,5 +1,6 @@
 package com.kino.gbaemu.ui.game
 
+import android.content.Context
 import android.view.SurfaceHolder
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,6 +9,7 @@ import com.kino.gbaemu.core.GbaKey
 import com.kino.gbaemu.core.RomLoadResult
 import com.kino.gbaemu.data.CheatsRepository
 import com.kino.gbaemu.data.ControlSkin
+import com.kino.gbaemu.data.CrashLog
 import com.kino.gbaemu.data.LibraryRepository
 import com.kino.gbaemu.data.RomEntry
 import com.kino.gbaemu.data.SaveStateRepository
@@ -35,6 +37,7 @@ data class GameUiState(
 )
 
 class GameViewModel(
+    private val appContext: Context,
     private val libraryRepository: LibraryRepository,
     private val settingsRepository: SettingsRepository,
     private val saveStateRepository: SaveStateRepository,
@@ -75,7 +78,8 @@ class GameViewModel(
             val result = withContext(Dispatchers.IO) {
                 val (romFile, saveFile) = libraryRepository.importIfNeeded(entry)
                 val cheats = cheatsRepository.list(entry.id).filter { it.enabled }.map { it.name to it.code }
-                val loadResult = engine.start(romFile.absolutePath, saveFile.absolutePath)
+                CrashLog.clear(appContext)
+                val loadResult = engine.start(romFile.absolutePath, saveFile.absolutePath, CrashLog.path(appContext))
                 if (loadResult == RomLoadResult.SUCCESS) {
                     engine.replaceCheats(cheats)
                 }

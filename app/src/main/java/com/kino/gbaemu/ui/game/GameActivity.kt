@@ -44,6 +44,7 @@ class GameActivity : ComponentActivity() {
         viewModelFactory {
             initializer {
                 GameViewModel(
+                    app.applicationContext,
                     app.libraryRepository,
                     app.settingsRepository,
                     app.saveStateRepository,

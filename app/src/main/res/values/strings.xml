@@ -8,6 +8,13 @@
     <string name="library_scanning">Procurando jogos…</string>
     <string name="library_legal_notice">Use apenas ROMs de jogos que você possui legalmente. Este aplicativo não inclui nem distribui jogos.</string>
 
+    <string name="crash_log_banner_title">O último jogo travou. Encontramos um log com os últimos passos antes do erro.</string>
+    <string name="crash_log_view">Ver / copiar</string>
+    <string name="crash_log_dismiss">Descartar</string>
+    <string name="crash_log_dialog_title">Log da última tentativa</string>
+    <string name="crash_log_copy">Copiar</string>
+    <string name="crash_log_copied">Copiado para a área de transferência</string>
+
     <string name="menu_resume">Continuar</string>
     <string name="menu_reset">Reiniciar jogo</string>
     <string name="menu_save_state">Salvar estado</string>
