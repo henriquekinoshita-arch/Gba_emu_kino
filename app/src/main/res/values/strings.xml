@@ -1,28 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Kino GBA</string>
+    <string name="app_name">Kino Emu</string>
 
     <string name="library_title">Biblioteca</string>
-    <string name="library_empty">Nenhuma ROM encontrada.\nToque em + para escolher uma pasta com seus jogos.</string>
+    <string name="library_empty">Nenhuma ROM encontrada.\nToque em + para escolher uma pasta com seus jogos de GBA ou Nintendo DS.</string>
     <string name="library_add_folder">Escolher pasta de ROMs</string>
     <string name="library_scanning">Procurando jogos…</string>
-    <string name="library_legal_notice">Use apenas ROMs de jogos que você possui legalmente. Este aplicativo não inclui nem distribui jogos.</string>
-
-    <string name="crash_log_banner_title">O último jogo travou. Encontramos um log com os últimos passos antes do erro.</string>
-    <string name="crash_log_view">Ver / copiar</string>
-    <string name="crash_log_dismiss">Descartar</string>
-    <string name="crash_log_dialog_title">Log da última tentativa</string>
-    <string name="crash_log_copy">Copiar</string>
-    <string name="crash_log_copied">Copiado para a área de transferência</string>
+    <string name="library_legal_notice">Use apenas ROMs de jogos que você possui legalmente. Este aplicativo não inclui, distribui nem baixa jogos ou BIOS.</string>
+    <string name="platform_gba">GBA</string>
+    <string name="platform_nds">Nintendo DS</string>
 
     <string name="menu_resume">Continuar</string>
     <string name="menu_reset">Reiniciar jogo</string>
     <string name="menu_save_state">Salvar estado</string>
     <string name="menu_load_state">Carregar estado</string>
-    <string name="menu_cheats">Cheats</string>
     <string name="menu_settings">Configurações</string>
     <string name="menu_fast_forward">Avanço rápido</string>
-    <string name="menu_rewind">Retroceder</string>
     <string name="menu_exit_to_library">Sair para a biblioteca</string>
 
     <string name="save_slot">Slot %1$d</string>
@@ -31,27 +24,15 @@
     <string name="save_state_loaded">Estado carregado do slot %1$d</string>
     <string name="save_state_failed">Não foi possível acessar o slot %1$d</string>
 
-    <string name="cheats_title">Cheats</string>
-    <string name="cheats_add">Adicionar código</string>
-    <string name="cheats_name_hint">Nome do cheat</string>
-    <string name="cheats_code_hint">Código (Game Genie / Action Replay)</string>
-    <string name="cheats_empty">Nenhum cheat cadastrado para este jogo.</string>
-
     <string name="settings_title">Configurações</string>
-    <string name="settings_control_skin">Estilo dos controles</string>
     <string name="settings_control_opacity">Opacidade dos controles</string>
     <string name="settings_haptics">Vibração ao tocar</string>
     <string name="settings_show_fps">Mostrar FPS</string>
-    <string name="settings_filtering">Filtro de imagem suave</string>
-    <string name="settings_controller_mapping">Mapear controle físico</string>
-    <string name="settings_fast_forward_speed">Velocidade do avanço rápido</string>
-
-    <string name="controller_mapping_title">Mapear controle</string>
-    <string name="controller_mapping_press">Pressione o botão para: %1$s</string>
-    <string name="controller_mapping_reset">Restaurar padrão</string>
 
     <string name="action_a">A</string>
     <string name="action_b">B</string>
+    <string name="action_x">X</string>
+    <string name="action_y">Y</string>
     <string name="action_l">L</string>
     <string name="action_r">R</string>
     <string name="action_start">Start</string>

@@ -1,3 +1,6 @@
 [submodule "external/mgba"]
 	path = external/mgba
 	url = https://github.com/mgba-emu/mgba.git
+[submodule "external/melonds-ds"]
+	path = external/melonds-ds
+	url = https://github.com/JesseTG/melonds-ds.git
